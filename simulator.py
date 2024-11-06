@@ -2,6 +2,7 @@ import random
 import matplotlib.pyplot as plt
 import numpy as np
 
+# Function to plot the lines
 def plot_lines(data):
     plt.figure(figsize=(10, 6))
     # Calculate differences between first and last values
@@ -46,7 +47,8 @@ class State:
     # toString method
     def __str__(self):
         return f"[Player Sum: {self.player_sum}, Dealer Hand: {self.dealer_hand}, Running Count: {self.running_count}]"
-        
+
+
 
 class BlackjackGame:
     def __init__(self, start_money, num_decks=5):
@@ -60,6 +62,7 @@ class BlackjackGame:
         self.bet_values = [25, 50, 75, 100]
         self.bet_probs = [0.65, 0.2, 0.1, 0.05]
         self.play_values = ["hit", "stand"]
+        self.final_states = ["win", "lose", "draw"]
 
     def create_deck(self, n=1):
         suits = ["Hearts", "Diamonds", "Clubs", "Spades"]
@@ -128,7 +131,8 @@ class BlackjackGame:
             else: # dealer does not have blackjack
                 reward = bet_amount*1.5
             self.update_count(dealer_hand[1])
-            next_state = State(self.calculate_value(player_hand), self.calculate_value(dealer_hand),self.running_count)
+            # next_state = State(self.calculate_value(player_hand), self.calculate_value(dealer_hand),self.running_count)
+            next_state = "win" if reward > 0 else "draw"
             self.history.append((state, "stand", reward, next_state))
             self.current_money += reward
         else:
@@ -144,13 +148,15 @@ class BlackjackGame:
 
                     if self.calculate_value(player_hand) > 21:
                         reward = -bet_amount
-                        next_state = State(self.calculate_value(player_hand), self.calculate_value(dealer_hand),self.running_count)
+                        # next_state = State(self.calculate_value(player_hand), self.calculate_value(dealer_hand),self.running_count)
+                        next_state = "lose"
                         self.history.append((state, action, reward, next_state))
                         self.current_money += reward
                         break
                     else:
                         reward = 0
-                        next_state = State(self.calculate_value(player_hand), self.calculate_value([dealer_hand[0]]),self.running_count)
+                        # next_state = State(self.calculate_value(player_hand), self.calculate_value([dealer_hand[0]]),self.running_count)
+                        next_state = "playing"
                         self.history.append((state, action, reward, next_state))
                 else:  # stand
                     while self.calculate_value(dealer_hand) < 17:
@@ -167,7 +173,8 @@ class BlackjackGame:
                     else:
                         reward = 0
                     
-                    next_state = State(player_value, dealer_value, self.running_count)
+                    # next_state = State(player_value, dealer_value, self.running_count)
+                    next_state = "lose" if reward < 0 else "win" if reward > 0 else "draw"
                     self.history.append((state, action, reward, next_state))    # action is stand
                     self.current_money += reward
                     break
