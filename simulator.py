@@ -31,7 +31,7 @@ def plot_lines(data):
          verticalalignment='top',
          bbox=dict(facecolor='white', alpha=0.5))
 
-    plt.title('Line Graphs of '+str(len(data))+' episodes')
+    plt.title('Playing using random Betting Strategy')
     plt.xlabel('Rounds Played')
     plt.ylabel('Money')
     plt.grid(True)
@@ -195,7 +195,8 @@ class BlackjackGame:
 
 
 if __name__ == "__main__":
-    start_money = 150
+    random.seed(42)
+    start_money = 500
     money_histories = []
     action_histories = []
     episodes = 1
