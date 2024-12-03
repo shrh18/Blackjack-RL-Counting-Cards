@@ -1,8 +1,9 @@
 import random
 import matplotlib.pyplot as plt
 import numpy as np
+from collections import defaultdict
 
-# Function to plot the lines
+
 def plot_lines(data):
     plt.figure(figsize=(10, 6))
     # Calculate differences between first and last values
@@ -31,7 +32,7 @@ def plot_lines(data):
          verticalalignment='top',
          bbox=dict(facecolor='white', alpha=0.5))
 
-    plt.title('Playing using random Betting Strategy')
+    plt.title('Line Graphs of '+str(len(data))+' episodes')
     plt.xlabel('Rounds Played')
     plt.ylabel('Money')
     plt.grid(True)
@@ -47,8 +48,7 @@ class State:
     # toString method
     def __str__(self):
         return f"[Player Sum: {self.player_sum}, Dealer Hand: {self.dealer_hand}, Running Count: {self.running_count}]"
-
-
+        
 
 class BlackjackGame:
     def __init__(self, start_money, num_decks=5):
@@ -62,7 +62,6 @@ class BlackjackGame:
         self.bet_values = [25, 50, 75, 100]
         self.bet_probs = [0.65, 0.2, 0.1, 0.05]
         self.play_values = ["hit", "stand"]
-        self.final_states = ["win", "lose", "draw"]
 
     def create_deck(self, n=1):
         suits = ["Hearts", "Diamonds", "Clubs", "Spades"]
@@ -131,8 +130,7 @@ class BlackjackGame:
             else: # dealer does not have blackjack
                 reward = bet_amount*1.5
             self.update_count(dealer_hand[1])
-            # next_state = State(self.calculate_value(player_hand), self.calculate_value(dealer_hand),self.running_count)
-            next_state = "win" if reward > 0 else "draw"
+            next_state = State(self.calculate_value(player_hand), self.calculate_value(dealer_hand),self.running_count)
             self.history.append((state, "stand", reward, next_state))
             self.current_money += reward
         else:
@@ -140,7 +138,7 @@ class BlackjackGame:
                 action = random.choice(self.play_values)
                 if action == "hit":
 
-                    state = State(self.calculate_value(player_hand), self.calculate_value([dealer_hand[0]]), 
+                    state = State(self.calculate_value(player_hand), dealer_hand[0][0], 
                       self.running_count)
                     
                     player_hand.append(self.deal_card())
@@ -148,15 +146,13 @@ class BlackjackGame:
 
                     if self.calculate_value(player_hand) > 21:
                         reward = -bet_amount
-                        # next_state = State(self.calculate_value(player_hand), self.calculate_value(dealer_hand),self.running_count)
-                        next_state = "lose"
+                        next_state = State(self.calculate_value(player_hand), self.calculate_value(dealer_hand),self.running_count)
                         self.history.append((state, action, reward, next_state))
                         self.current_money += reward
                         break
                     else:
                         reward = 0
-                        # next_state = State(self.calculate_value(player_hand), self.calculate_value([dealer_hand[0]]),self.running_count)
-                        next_state = "playing"
+                        next_state = State(self.calculate_value(player_hand), self.calculate_value([dealer_hand[0]]),self.running_count)
                         self.history.append((state, action, reward, next_state))
                 else:  # stand
                     while self.calculate_value(dealer_hand) < 17:
@@ -173,8 +169,7 @@ class BlackjackGame:
                     else:
                         reward = 0
                     
-                    # next_state = State(player_value, dealer_value, self.running_count)
-                    next_state = "lose" if reward < 0 else "win" if reward > 0 else "draw"
+                    next_state = State(player_value, dealer_value, self.running_count)
                     self.history.append((state, action, reward, next_state))    # action is stand
                     self.current_money += reward
                     break
@@ -192,23 +187,141 @@ class BlackjackGame:
         self.money_history = [self.start_money]
         self.history = []
 
+    # def step(self, state, action):
+    #     if action == "stand":
+    #         return self.resolve_stand(state)
+    #     else:  # hit
+    #         return self.resolve_hit(state)
+
+    # def resolve_stand(self, state):
+    #     dealer_hand = [self.deal_card(update_count=True)]
+    #     while self.calculate_value(dealer_hand) < 17:
+    #         dealer_hand.append(self.deal_card(update_count=True))
+        
+    #     dealer_value = self.calculate_value(dealer_hand)
+    #     if dealer_value > 21 or state.player_sum > dealer_value:
+    #         return None, 1  # Win
+    #     elif state.player_sum < dealer_value:
+    #         return None, -1  # Lose
+    #     else:
+    #         return None, 0  # Draw
+
+    # def resolve_hit(self, state):
+    #     new_card = self.deal_card(update_count=True)
+    #     new_sum = state.player_sum + self.calculate_value([new_card])
+    #     if new_sum > 21:
+    #         return None, -1  # Bust
+    #     else:
+    #         new_state = State(new_sum, state.dealer_hand, self.running_count)
+    #         return new_state, 0  # Game continues
+
+
+# class BlackjackValueIteration:
+#     def __init__(self, game, num_episodes=100000):
+#         self.game = game
+#         self.values = defaultdict(float)
+#         self.returns = defaultdict(list)
+#         self.policy = {}
+#         self.num_episodes = num_episodes
+#         self.epsilon = 0.1  # For epsilon-greedy policy
+
+#     def run_episodes(self):
+#         for _ in range(self.num_episodes):
+#             self.game.reset()
+#             episode = []
+#             state = self.get_initial_state()
+            
+#             while True:
+#                 action = self.epsilon_greedy_policy(state)
+#                 next_state, reward = self.game.step(state, action)
+#                 episode.append((state, action, reward))
+#                 if next_state is None:  # Episode ended
+#                     break
+#                 state = next_state
+
+#             self.update_values_and_policy(episode)
+
+#     def get_initial_state(self):
+#         player_hand = [self.game.deal_card(update_count=True) for _ in range(2)]
+#         dealer_card = self.game.deal_card(update_count=True)
+#         return State(self.game.calculate_value(player_hand), 
+#                      self.game.calculate_value([dealer_card]), 
+#                      self.game.running_count)
+
+#     def epsilon_greedy_policy(self, state):
+#         if np.random.random() < self.epsilon:
+#             return np.random.choice(self.game.play_values)
+#         else:
+#             return self.policy.get(str(state), np.random.choice(self.game.play_values))
+
+#     def update_values_and_policy(self, episode):
+#         G = 0
+#         for state, action, reward in reversed(episode):
+#             G = reward + self.game.gamma * G
+#             state_action = (str(state), action)
+#             self.returns[state_action].append(G)
+#             self.values[state_action] = np.mean(self.returns[state_action])
+            
+#             state_actions = [(str(state), a) for a in self.game.play_values]
+#             best_action = max(state_actions, key=lambda x: self.values[x])
+#             self.policy[str(state)] = best_action[1]
+
+#     def get_optimal_action(self, state):
+#         return self.policy.get(str(state), np.random.choice(self.game.play_values))
+
+class BlackjackValueIteration:
+    def __init__(self, game, num_episodes=100000):
+        self.game = game
+        self.values = defaultdict(float)
+        self.returns = defaultdict(list)
+        self.policy = {}
+        self.num_episodes = num_episodes
+        self.epsilon = 0.1  # For epsilon-greedy policy
+
+    def run_episodes(self):
+        for _ in range(self.num_episodes):
+            self.game.reset()
+            self.process_episode()
+
+    def process_episode(self):
+        for state, action, reward, next_state in self.game.history:
+            state_action = (str(state), action)
+            self.returns[state_action].append(reward)
+            self.values[state_action] = np.mean(self.returns[state_action])
+            
+            state_actions = [(str(state), a) for a in self.game.play_values]
+            best_action = max(state_actions, key=lambda x: self.values[x])
+            self.policy[str(state)] = best_action[1]
+
+    def get_optimal_action(self, state):
+        if np.random.random() < self.epsilon:
+            return np.random.choice(self.game.play_values)
+        else:
+            return self.policy.get(str(state), np.random.choice(self.game.play_values))
+
+    def print_policy(self):
+        for state_str, action in self.policy.items():
+            state = eval(state_str)
+            print(f"Player Sum: {state.player_sum}, Dealer Card: {state.dealer_hand}, Count: {state.running_count} -> Action: {action}")
 
 
 if __name__ == "__main__":
-    random.seed(42)
-    start_money = 500
-    money_histories = []
-    action_histories = []
-    episodes = 1
+    game = BlackjackGame(start_money=150, num_decks=5)
+    vi = BlackjackValueIteration(game, num_episodes=100000)
+    vi.run_episodes()
 
-    for _ in range(episodes):
-        game = BlackjackGame(start_money)
-        money_history, action_history = game.play_game()
-        money_histories.append(money_history)
-        action_histories.append(action_history)
+    # Test the learned policy
+    test_states = [
+        State(player_sum=15, dealer_hand=10, running_count=0),
+        State(player_sum=19, dealer_hand=6, running_count=5),
+        State(player_sum=12, dealer_hand=2, running_count=-3)
+    ]
 
-    print("Action Histories: ")
-    for action_history in action_histories:
-        for action in action_history:
-            print(str(action[0]), action[1], action[2], str(action[3]))
-    plot_lines(money_histories)
+    for state in test_states:
+        optimal_action = vi.get_optimal_action(state)
+        print(f"Optimal action for state {state}: {optimal_action}")
+
+    # You can also print some of the learned values
+    print("\nSome learned values:")
+    for (state, action), value in list(vi.values.items())[:10]:
+        print(f"State: {state}, Action: {action}, Value: {value}")
